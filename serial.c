@@ -20,49 +20,58 @@
 
 #define BAUDRATE B38400
 #define SERIALDEVICE "/dev/ttyS0" //Use commucation device
-unsigned char buf[255];
-
+unsigned char buffer[255];
+void repeatOverIteration(int fileDescriptor);
 int main(void){
     int fileDescriptor; //File Descriptor variable
-    int response;
-    int iterator;
-    struct termios oldtio, newtio;
+    struct termios firstTermConf, secondTermConf;
 
-    memset((void*)&buf, 0, (size_t)sizeof(buf)); //Initialize buffer with value 0
+    memset((void*)&buffer, 0, (size_t)sizeof(buffer)); //Initialize buffer with value 0
     fileDescriptor = open(SERIALDEVICE, O_RDWR | O_NOCTTY, O_NONBLOCK);
-    //Open commucation Descriptor with O_NOCTTY option. This function can write and read data from it.
-    //
+    //Open commucation Descriptor with O_NOCTTY option. This function return file descriptor which can write and read data from it.
+
     if(fileDescriptor<0){
         perror(SERIALDEVICE); //Print error prefix
         exit(-1); //Exit this program if error has happened
     }//If fileDescriptor has not opened, handle that error
-    tcgetattr(fileDescriptor, &oldtio); //Get fileDescriptor's current terminal attribute and save it to oldtio
+    tcgetattr(fileDescriptor, &firstTermConf); //Get fileDescriptor's current terminal attribute and save it to firstTermConf
 
-    memset((void*)&newtio, 0, sizeof(newtio));//Initialize newtio witah value 0
-    newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD; //Give control mode of fileDescriptor's new terminal attribute
-    newtio.c_iflag = IGNPAR | ICRNL; //Give input mode of fileDescriptor's new terminal attribute
+    memset((void*)&secondTermConf, 0, sizeof(secondTermConf));//Initialize secondTermConf witah value 0
+    secondTermConf.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD; //Give control mode of fileDescriptor's new terminal attribute
+    secondTermConf.c_iflag = IGNPAR | ICRNL; //Give input mode of fileDescriptor's new terminal attribute
 
     tcflush(fileDescriptor, TCIFLUSH); //Kill fileDescriptor's current data
-    tcsetattr(fileDescriptor, TCSANOW, &newtio); //Give newtio attribute to fileDescriptor
+    tcsetattr(fileDescriptor, TCSANOW, &secondTermConf); //Give secondTermConf attribute to fileDescriptor
     fflush(stdin); //Flush current standard input buffer
     fflush(stdout); //Flush current standard output buffer
+    memset((void*)buffer, 0, sizeof(buffer));
 
-    for(iterator=0; iterator<255; iterator++){
-        buf[iterator] = 0x00;
-    } //Fill all byte of buffer with value 0
-    tcflush(fileDescriptor, TCIFLUSH); //Kill fileDescriptor's current data
-    tcflush(fileDescriptor, TCIFLUSH); //Kill fileDescriptor's current data
     tcflush(fileDescriptor, TCIFLUSH); //Kill fileDescriptor's current data
 
     while(1)
     {
-      fflush(stdin);
-      fflush(stdout);
-      response = read(fileDescriptor, buf, 255); //Read recieved data from fileDescriptor and save it to buffer
-      for (iterator=0 ; iterator<response; iterator++){
-          printf("%X\t", buf[iterator]);
-      }
+      repeatOverIteration(fileDescriptor);
     } //Waiting for user's input
-    tcsetattr(fileDescriptor,TCSANOW, &oldtio); //restore fileDescriptor's Previous terminal attribute
+    tcsetattr(fileDescriptor,TCSANOW, &firstTermConf); //restore fileDescriptor's Previous terminal attribute
     return 0;
+}
+void repeatOverIteration(int fileDescriptor)
+{
+  int responseLength;
+  int iterator;
+  static int before = 0x00;
+  fflush(stdin);
+  fflush(stdout);
+  responseLength = read(fileDescriptor, buffer, 255); //Read recieved data from fileDescriptor and save it to buffer
+  for (iterator=0 ; iterator<responseLength; iterator++){
+    if (before == 0x7E && buffer[iterator] != 0x7E)
+      printf("\n%X\t", buffer[iterator]);
+    else if (buffer[iterator] == 0x7D){
+      iterator += 1;
+      printf("%X\t", (unsigned char)((char)(buffer[iterator])-0X20));
+    }
+    else
+      printf("%X\t", buffer[iterator]);
+      before = buffer[iterator];
+    }
 }
