@@ -69,7 +69,7 @@ void repeatOverIteration(int fileDescriptor)
   fflush(stdout);
   responseLength = read(fileDescriptor, buffer, 255); //Read recieved data from fileDescriptor and save it to buffer
   for (iterator=0 ; iterator<responseLength; iterator++){
-    if(buffer[iterator] == 0X7E){
+    if(buffer[iterator] == 0X7E && packetLength > 0){
       handlePacket(packet, packetLength, 0);
       packetLength = 0;
       continue;
