@@ -18,10 +18,12 @@
 #include <assert.h>
 #include <fcntl.h>
 
+#define MAX_PPP_PACKET_LENGTH 1500
 #define BAUDRATE B38400
 #define SERIALDEVICE "/dev/ttyS0" //Use commucation device
 unsigned char buffer[255];
 void repeatOverIteration(int fileDescriptor);
+void handlePacket(unsigned char packet[], int length, int flag);
 int main(void){
     int fileDescriptor; //File Descriptor variable
     struct termios firstTermConf, secondTermConf;
@@ -59,19 +61,31 @@ void repeatOverIteration(int fileDescriptor)
 {
   int responseLength;
   int iterator;
+  static unsigned char packet[MAX_PPP_PACKET_LENGTH];
+  static int packetLength = 0;
   static int before = 0x00;
   fflush(stdin);
   fflush(stdout);
   responseLength = read(fileDescriptor, buffer, 255); //Read recieved data from fileDescriptor and save it to buffer
   for (iterator=0 ; iterator<responseLength; iterator++){
-    if (before == 0x7E && buffer[iterator] != 0x7E)
-      printf("\n%X\t", buffer[iterator]);
-    else if (buffer[iterator] == 0x7D){
+    if(buffer[iterator] == 0X7E){
+      handlePacket(packet, packetLength, 0);
+      packetLength = 0;
+      continue;
+    }
+    else if (buffer[iterator] == 0X7D){
       iterator += 1;
-      printf("%X\t", (unsigned char)((char)(buffer[iterator])-0X20));
+      packet[packetLength] = (unsigned char)((char)buffer[iterator] - 0X20);
     }
-    else
-      printf("%X\t", buffer[iterator]);
-      before = buffer[iterator];
+    else{
+      packet[packetLength] = buffer[iterator];
     }
+    packetLength += 1;
+  }
+}
+void handlePacket(unsigned char packet[], int length, int flag) {
+  int iterator;
+  for(iterator = 0; iterator < length; ++iterator)
+    printf("%X\t", packet[iterator]);
+  printf("\n");
 }
