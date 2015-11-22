@@ -49,7 +49,7 @@ static u16 fcstab[256] = {
 * Calculate a new fcs given the current fcs and the new data.
 */
 
-u16 pppfcs16(u16 fcs, char* cp, int len){
+static u16 pppfcs16(u16 fcs, char* cp, int len){
 
     while (len--)
     fcs = (fcs >> 8) ^ fcstab[(fcs ^ *cp++) & 0xff];

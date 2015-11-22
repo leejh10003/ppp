@@ -17,6 +17,7 @@
 #include <time.h>
 #include <assert.h>
 #include <fcntl.h>
+#include "crc.h"
 
 #define MAX_PPP_PACKET_LENGTH 1500
 #define BAUDRATE B38400
@@ -84,8 +85,14 @@ void repeatOverIteration(int fileDescriptor)
   }
 }
 void handlePacket(unsigned char packet[], int length, int flag) {
+  int test;
   int iterator;
   for(iterator = 0; iterator < length; ++iterator)
     printf("%X\t", packet[iterator]);
   printf("\n");
+  test = tryfcs16(packet, length);
+  switch (test) {
+    case 1: printf("good\n"); break;
+    default: printf("bad\n");
+  }
 }
