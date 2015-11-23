@@ -25,6 +25,7 @@
 unsigned char buffer[255];
 void repeatOverIteration(int fileDescriptor);
 void handlePacket(unsigned char packet[], int length, int flag);
+void lcp(unsigned char packetCutted[], int length);
 int main(void){
     int fileDescriptor; //File Descriptor variable
     struct termios firstTermConf, secondTermConf;
@@ -65,34 +66,87 @@ void repeatOverIteration(int fileDescriptor)
   static unsigned char packet[MAX_PPP_PACKET_LENGTH];
   static int packetLength = 0;
   static int before = 0x00;
+  static int escape_on = 0;
   fflush(stdin);
   fflush(stdout);
   responseLength = read(fileDescriptor, buffer, 255); //Read recieved data from fileDescriptor and save it to buffer
   for (iterator=0 ; iterator<responseLength; iterator++){
-    if(buffer[iterator] == 0X7E && packetLength > 0){
-      handlePacket(packet, packetLength, 0);
-      packetLength = 0;
-      continue;
+    if(buffer[iterator] == 0X7E){
+      if(packetLength > 0){
+        handlePacket(packet+1, packetLength -1, 0);
+        packetLength = 0;
+        continue;
+      }
+      packetLength += 1;
     }
     else if (buffer[iterator] == 0X7D){
-      iterator += 1;
-      packet[packetLength] = (unsigned char)((char)buffer[iterator] - 0X20);
+      escape_on = 1;
     }
     else{
-      packet[packetLength] = buffer[iterator];
+      if(escape_on == 1){
+        packet[packetLength] = (unsigned char)((char)buffer[iterator] - 0X20);
+        escape_on = 0;
+      }
+      else{
+        packet[packetLength] = buffer[iterator];
+      }
+      packetLength += 1;
     }
-    packetLength += 1;
   }
 }
 void handlePacket(unsigned char packet[], int length, int flag) {
   int test;
   int iterator;
-  for(iterator = 0; iterator < length; ++iterator)
-    printf("%X\t", packet[iterator]);
-  printf("\n");
   test = tryfcs16(packet, length);
+  for (iterator = 0; iterator < length; iterator++) {
+    printf("%X\t", packet[iterator]);
+  }
+  printf("\n");
   switch (test) {
-    case 1: printf("good\n"); break;
-    default: printf("bad\n");
+    case 1: printf("good\t"); break;
+    default: printf("bad\t");
+  }
+  switch (packet[0]) {
+    case 0XFF: printf("PPP protocol\t"); break;
+    default: printf("else protocol\t"); break;
+  }
+  switch (packet[1]) {
+    case 0X03: printf("good control\t"); break;
+    default: printf("bad control\t"); break;
+  }
+  switch (*((unsigned short*)(packet+2))) {
+    case 0X2180: printf("IPCP protocol\t"); break;
+    case 0X21C0: printf("LCP protocol\t"); break;
+    default: printf("else protocol\t");break;
+  }
+  printf("\n");
+  lcp(packet+4, length-6);
+  printf("\n");
+}
+void lcp(unsigned char packetCutted[], int length) {
+  int iterator;
+  int id;
+  short lengthInPacket;
+  for (iterator = 0; iterator < length; iterator++) {
+    printf("%X\t", packetCutted[iterator]);
+  }
+  printf("\n");
+  switch (packetCutted[0]) {
+    case 0X01: printf("Configure request\t"); break;
+    case 0x02: printf("Configure Acknowlogement\t"); break;
+    case 0X03: printf("Configure None-Acknowlogement\t"); break;
+    case 0X04: printf("Configure Reject\t"); break;
+    default: printf("Strange LCP code\t");
+  }
+  id = packetCutted[1];
+  ((char*)&lengthInPacket)[0] = packetCutted[3];
+  ((char*)&lengthInPacket)[1] = packetCutted[2];
+  printf("%Xis length given to function. \t", length);
+  printf("%X is ", lengthInPacket);
+  if(length == lengthInPacket){
+    printf("Good length\t");
+  }
+  else{
+    printf("bad length\t");
   }
 }
