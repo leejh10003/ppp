@@ -103,8 +103,8 @@ void handlePacket(unsigned char packet[], int length, int flag) {
   }
   printf("\n");
   switch (test) {
-    case 1: printf("good\t"); break;
-    default: printf("bad\t");
+    case 1: printf("CRC test result is good\t"); break;
+    default: printf("CRC test result is bad\t");
   }
   switch (packet[0]) {
     case 0XFF: printf("PPP protocol\t"); break;
@@ -116,12 +116,9 @@ void handlePacket(unsigned char packet[], int length, int flag) {
   }
   switch (*((unsigned short*)(packet+2))) {
     case 0X2180: printf("IPCP protocol\t"); break;
-    case 0X21C0: printf("LCP protocol\t"); break;
+    case 0X21C0: printf("LCP protocol\t"); printf("\n"); lcp(packet+4, length-6); printf("\n\n\n"); break;
     default: printf("else protocol\t");break;
   }
-  printf("\n");
-  lcp(packet+4, length-6);
-  printf("\n");
 }
 void lcp(unsigned char packetCutted[], int length) {
   int iterator;
@@ -132,11 +129,28 @@ void lcp(unsigned char packetCutted[], int length) {
   }
   printf("\n");
   switch (packetCutted[0]) {
-    case 0X01: printf("Configure request\t"); break;
+    case 0X01: printf("Configure Request\t"); break;
     case 0x02: printf("Configure Acknowlogement\t"); break;
     case 0X03: printf("Configure None-Acknowlogement\t"); break;
     case 0X04: printf("Configure Reject\t"); break;
+    case 0X05: printf("Terminate Request\t"); break;
+    case 0X06: printf("Terminate Acknowlogement\t"); break;
+    case 0X07: printf("Code Reject\t"); break;
+    case 0X08: printf("Protocol Reject\t"); break;
+    case 0X09: printf("Echo Eequest\t"); break;
+    case 0X0A: printf("Echo Reply\t"); break;
+    case 0X0B: printf("Discard Request\t"); break;
     default: printf("Strange LCP code\t");
+  }
+  switch (packetCutted[1]) {
+    case 0X01: printf("MRU\t"); break;
+    case 0X02: printf("ACCM\t"); break;
+    case 0X03: printf("Authentication\t"); break;
+    case 0X05: printf("Magic Number\t"); break;
+    case 0X07: printf("Protocol compress\t"); break;
+    case 0X08: printf("Address/Control field compress\t"); break;
+    case 0X0D: printf("Callback\t"); break;
+    default: printf("Unknown\n"); break;
   }
   id = packetCutted[1];
   ((char*)&lengthInPacket)[0] = packetCutted[3];
