@@ -125,7 +125,7 @@ static int callback(unsigned char packetCutted[]){
     return -1;
   }
 }
-static void lcpData(unsigned char packetCutted[], int length) {
+static void lcpDecode(unsigned char packetCutted[], int length) {
   int move = 0;
   int returned;
   while (move < length){
@@ -180,5 +180,5 @@ void lcp(unsigned char packetCutted[], int length) {
     printf("bad length\t");
   }
   printf("\n\n\n");
-  lcpData(packetCutted + 4, length - 4);
+  lcpDecode(packetCutted + 4, length - 4);
 }
