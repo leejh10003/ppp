@@ -23,9 +23,12 @@
 #define BAUDRATE B38400
 #define SERIALDEVICE "/dev/ttyS0" //Use commucation device
 unsigned char buffer[255];
+enum ppp_status {initial, starting, closed, stopped, closing, stopping, req_sent, ack_rcvd, ack_sent, opened};
+enum ppp_status state_machine;
 void repeatOverIteration(int fileDescriptor);
 void handlePacket(unsigned char packet[], int length, int flag);
 void lcp(unsigned char packetCutted[], int length);
+void lcpData(unsigned char packetCutted[], int length);
 int main(void){
     int fileDescriptor; //File Descriptor variable
     struct termios firstTermConf, secondTermConf;
@@ -71,8 +74,10 @@ void repeatOverIteration(int fileDescriptor)
   fflush(stdout);
   responseLength = read(fileDescriptor, buffer, 255); //Read recieved data from fileDescriptor and save it to buffer
   for (iterator=0 ; iterator<responseLength; iterator++){
+    printf("%X\t", buffer[iterator]);
     if(buffer[iterator] == 0X7E){
       if(packetLength > 0){
+        printf("\n");
         handlePacket(packet+1, packetLength -1, 0);
         packetLength = 0;
         continue;
@@ -142,16 +147,6 @@ void lcp(unsigned char packetCutted[], int length) {
     case 0X0B: printf("Discard Request\t"); break;
     default: printf("Strange LCP code\t");
   }
-  switch (packetCutted[1]) {
-    case 0X01: printf("MRU\t"); break;
-    case 0X02: printf("ACCM\t"); break;
-    case 0X03: printf("Authentication\t"); break;
-    case 0X05: printf("Magic Number\t"); break;
-    case 0X07: printf("Protocol compress\t"); break;
-    case 0X08: printf("Address/Control field compress\t"); break;
-    case 0X0D: printf("Callback\t"); break;
-    default: printf("Unknown\n"); break;
-  }
   id = packetCutted[1];
   ((char*)&lengthInPacket)[0] = packetCutted[3];
   ((char*)&lengthInPacket)[1] = packetCutted[2];
@@ -162,5 +157,136 @@ void lcp(unsigned char packetCutted[], int length) {
   }
   else{
     printf("bad length\t");
+  }
+  printf("\n");
+  lcpData(packetCutted + 4, length - 4);
+}
+void lcpData(unsigned char packetCutted[], int length) {
+  int move = 0;
+  int returned;
+  while (move < length){
+    switch (packetCutted[0 + move]) {
+      case 0X01: returned = mru(packetCutted + move); break;
+      case 0X02: returned = accm(packetCutted + move); break;
+      case 0X03: returned = auth(packetCutted + move); break;
+      case 0X05: returned = magicNum(packetCutted + move); break;
+      case 0X07: returned = prtclComp(packetCutted + move); break;
+      case 0X08: returned = adrCtrlComp(packetCutted + move); break;
+      case 0X0D: returned = callback(packetCutted + move); break;
+      default: printf("Unknown\t"); break;
+    };
+    if(returned < 0)
+      break;
+    else
+      move += returned;
+  };
+  printf("\n");
+}
+int mru(unsigned char packetCutted[]) {
+  int i;
+  printf("MRU\t");
+  if(packetCutted[1] == 4){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< 2; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return 4;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int accm(unsigned char packetCutted[]) {
+  int i;
+  printf("ACCM\t");
+  if(packetCutted[1] == 6){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< 4; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return 6;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int auth(unsigned char packetCutted[]){
+  int i;
+  printf("Authentication\t");
+  if(packetCutted[1] == 5 || packetCutted[1] == 6){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< packetCutted[1]-2; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return packetCutted[1];
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int magicNum(unsigned char packetCutted[]){
+  int i;
+  printf("Magic Number\t");
+  if(packetCutted[1] == 6){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< 4; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return 6;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int prtclComp(unsigned char packetCutted[]){
+  int i;
+  printf("Protocol Compress\t");
+  if(packetCutted[1] == 2){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< 2; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return 4;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int adrCtrlComp(unsigned char packetCutted[]){
+  int i;
+  printf("Address/Control Compress\t");
+  if(packetCutted[1] == 2){
+    printf("Good length\t Data: \t");
+    for(i = 0; i< 2; ++i){
+      printf("%X\t", packetCutted[2+i]);
+    }
+    printf("\n");
+    return 4;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
+  }
+}
+int callback(unsigned char packetCutted[]){
+  int i;
+  printf("Callback\t");
+  if(packetCutted[1] == 3){
+    printf("Good length\t Data: \t%X\t\n", packetCutted[2+i]);
+    return 3;
+  }
+  else{
+    printf("Bad length\n");
+    return -1;
   }
 }
