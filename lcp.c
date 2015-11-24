@@ -179,6 +179,6 @@ void lcp(unsigned char packetCutted[], int length) {
   else{
     printf("bad length\t");
   }
-  printf("\n");
+  printf("\n\n\n");
   lcpData(packetCutted + 4, length - 4);
 }
