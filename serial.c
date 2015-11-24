@@ -198,7 +198,7 @@ int mru(unsigned char packetCutted[]) {
     return -1;
   }
 }
-int accm(unsigned char packetCutted[]) {
+int accm(unsigned char packetCutted[]) {");");
   int i;
   printf("ACCM\t");
   if(packetCutted[1] == 6){
@@ -233,7 +233,7 @@ int auth(unsigned char packetCutted[]){
 int magicNum(unsigned char packetCutted[]){
   int i;
   printf("Magic Number\t");
-  if(packetCutted[1] == 6){
+  if(packetCutted[1] == 6){printf("\n");
     printf("Good length\t Data: \t");
     for(i = 0; i< 4; ++i){
       printf("%X\t", packetCutted[2+i]);
