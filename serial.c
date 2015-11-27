@@ -21,8 +21,6 @@
 #define BAUDRATE B38400
 #define SERIALDEVICE "/dev/ttyS0" //Use commucation device
 unsigned char buffer[255];
-enum ppp_status {initial, starting, closed, stopped, closing, stopping, req_sent, ack_rcvd, ack_sent, opened};
-enum ppp_status state_machine;
 int main(void){
     int fileDescriptor; //File Descriptor variable
     struct termios firstTermConf, secondTermConf;
@@ -51,7 +49,7 @@ int main(void){
 
     while(1)
     {
-      repeatOverIteration(fileDescriptor, buffer);
+      sliceForRead(fileDescriptor, buffer);
     } //Waiting for user's input
     tcsetattr(fileDescriptor,TCSANOW, &firstTermConf); //restore fileDescriptor's Previous terminal attribute
     return 0;
