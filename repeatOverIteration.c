@@ -20,13 +20,13 @@
 #include "crc.h"
 #include "lcp.h"
 #define MAX_PPP_PACKET_LENGTH 1500
-static void readPacket(unsigned char packet[], int length, int flag) {
+static void pppRead(unsigned char packet[], int length, int flag) {
   int test;
   int iterator;
-  test = tryfcs16(packet, length);
   for (iterator = 0; iterator < length; iterator++) {
     printf("%X\t", packet[iterator]);
   }
+  test = tryfcs16(packet, length);
   printf("\n");
   switch (test) {
     case 1: printf("CRC test result is good\t"); break;
@@ -42,12 +42,12 @@ static void readPacket(unsigned char packet[], int length, int flag) {
   }
   switch (*((unsigned short*)(packet+2))) {
     case 0X2180: printf("IPCP protocol\t"); break;
-    case 0X21C0: printf("LCP protocol\t"); printf("\n\n\n"); lcpRcvd(packet+4, length-6); printf("\n\n\n"); break;
+    case 0X21C0: printf("LCP protocol\t"); printf("\n\n\n"); lcpRcvd(packet+4, length-6, packet + length - 3); printf("\n\n\n"); break;
     default: printf("else protocol\t");break;
   }
 }
 
-void sliceForRead(int fileDescriptor, unsigned char buffer[])
+void readPacket(int fileDescriptor, unsigned char buffer[])
 {
   int responseLength;
   int iterator;
@@ -63,7 +63,7 @@ void sliceForRead(int fileDescriptor, unsigned char buffer[])
     if(buffer[iterator] == 0X7E){
       if(packetLength > 0){
         printf("\n\n\n");
-        readPacket(packet+1, packetLength -1, 0);
+        pppRead(packet+1, packetLength -1, 0);
         packetLength = 0;
         continue;
       }
@@ -84,6 +84,6 @@ void sliceForRead(int fileDescriptor, unsigned char buffer[])
     }
   }
 }
-void writeForSend(int fileDescriptor) {
+void writePacket(int fileDescriptor) {
 
 }

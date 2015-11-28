@@ -1,4 +1,5 @@
 #include "status.h"
+#include "lcp.h"
 static enum ppp_state lcpState;
 static enum ppp_state ipcpState;
 void lcpStateMachine(enum event arg) {
@@ -16,7 +17,7 @@ void lcpStateMachine(enum event arg) {
       }
     case closed:
       switch (arg) {
-        case open_event: lcpSend(flags); lcpState = reqSent; break;
+        case open_event: lcpSend(confReq); lcpState = reqSent; break;
         default: break;
       }
     case stopped:

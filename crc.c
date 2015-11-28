@@ -1,13 +1,12 @@
+#define __JJCRCFUNC__
+#include "crc.h"
 //for crc calculation get by rfc doc
-#define PPPINITFCS16 0xffff /* Initial FCS value */
-#define PPPGOODFCS16 0xf0b8 /* Good final FCS value */
 
 /*
 * u16 represents an unsigned 16-bit number. Adjust the typedef for
 * your hardware.
 */
-typedef unsigned short u16;
-typedef unsigned long u32;
+
 /*
 * FCS lookup table as calculated by the table generator.
 */
@@ -49,7 +48,7 @@ static u16 fcstab[256] = {
 * Calculate a new fcs given the current fcs and the new data.
 */
 
-static u16 pppfcs16(u16 fcs, char* cp, int len){
+u16 pppfcs16(u16 fcs, char* cp, int len){
 
     while (len--)
     fcs = (fcs >> 8) ^ fcstab[(fcs ^ *cp++) & 0xff];

@@ -1,5 +1,5 @@
 #ifndef __JJREPEATHEADER__
-void sliceForRead(int fileDescriptor, unsigned char buffer[]);
-void writeForSend(int fileDescriptor);
+void readPacket(int fileDescriptor, unsigned char buffer[]);
+void writePacket(int fileDescriptor);
 #define __JJREPEATHEADER__
 #endif

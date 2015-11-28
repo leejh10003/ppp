@@ -49,7 +49,7 @@ int main(void){
 
     while(1)
     {
-      sliceForRead(fileDescriptor, buffer);
+      readPacket(fileDescriptor, buffer);
     } //Waiting for user's input
     tcsetattr(fileDescriptor,TCSANOW, &firstTermConf); //restore fileDescriptor's Previous terminal attribute
     return 0;
